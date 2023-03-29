@@ -1,0 +1,6 @@
+# Python cruft
+.venv/
+dist/
+
+# Local settings
+.env
