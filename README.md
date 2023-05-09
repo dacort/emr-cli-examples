@@ -51,7 +51,7 @@ emr run \
     --entry-point entrypoint.py \
     --cluster-id ${CLUSTER_ID} \
     --s3-code-uri s3://${S3_BUCKET}/tmp/emr-cli-demo/$(basename $PWD) \
-    --wait
+    --wait --show-stdout
 ```
 
 ## Multi file test
@@ -219,6 +219,40 @@ emr run \
     --s3-code-uri s3://${S3_BUCKET}/tmp/emr-cli-demo/$(basename $PWD)
 ```
 
+## Spark SQL + Glue Data Catalog support
+
+If you're using SparkSQL wrapped in a Python script, that's also similar to the [Single file test](#single-file-test), but you need to add an extra `--spark-submit-options` argument and ensure you use `enableHiveSupport()` when creating your SparkSession object.
+
+For example:
+
+```python
+from pyspark.sql import SparkSession
+
+spark = (
+    SparkSession.builder.appName("SparkSQL")
+    .enableHiveSupport()
+    .getOrCreate()
+)
+```
+
+Assuming we have a simple `sql.py` file that just shows our databases, we can deploy and run it like this:
+
+```bash
+emr run \
+    --job-name sparksql-glue \
+    --entry-point sql.py \
+    --application-id ${APPLICATION_ID} \
+    --job-role ${JOB_ROLE_ARN} \
+    --s3-code-uri s3://${S3_BUCKET}/tmp/emr-cli-demo/$(basename $PWD) \
+    --build \
+    --wait \
+    --s3-logs-uri s3://${S3_BUCKET}/logs/ \
+    --show-stdout \
+    --spark-submit-opts "--conf spark.hadoop.hive.metastore.client.factory.class=com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+```
+
+> **Note**: The command above also makes use of the `--show-stdout` and `--s3-logs-uri` flags added in the [v0.0.9 emr-cli](https://github.com/awslabs/amazon-emr-cli/releases/tag/v0.0.9) release.
+
 # Conclusion
 
-That's it for now! Thanks for joining as we explored the varied ways of deploying PySpark code to EMR and how the EMR CLI can make it all as easy as a single command. 
+That's it for now! Thanks for joining as we explored the varied ways of deploying PySpark code to EMR and how the EMR CLI can make it all as easy as a single command.
